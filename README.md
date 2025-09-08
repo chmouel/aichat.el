@@ -29,6 +29,8 @@ Or with `use-package`:
 
 ```elisp
 (use-package aichat
+  :custom
+  (aichat-default-model "gemini:gemini-2.5-flash") ;; Make sure to set your model to what you have configured in aichat
   :load-path "path/to/aichat.el"
   :bind (("C-c a e" . aichat-execute)
          ("C-c a i" . aichat-insert)
@@ -39,6 +41,8 @@ For Emacs 29+ you can use use-package-vc or for Emacs 30:
 
 ```elisp
 (use-package aichat
+  :custom
+  (aichat-default-model "gemini:gemini-2.5-flash") ;; Make sure to set your model to what you have configured in aichat
   :vc (:url "https://github.com/chmouel/aichat.el/" :rev :newest)
   :bind (("C-c a e" . aichat-execute)
          ("C-c a i" . aichat-insert)
@@ -51,6 +55,8 @@ message with `git-commit-mode` you can do this:
 ```elisp
 (use-package aichat
   :defer t
+  :custom
+  (aichat-default-model "gemini:gemini-2.5-flash") ;; Make sure to set your model to what you have configured in aichat
   :after git-commit
   :vc (:url "https://github.com/chmouel/aichat.el/" :rev :newest)
   :hook
@@ -67,6 +73,12 @@ message with `git-commit-mode` you can do this:
 > You’ll need to create the `gitcommit` role (or whatever you have set as
 > `aichat-gitcommit-role`) in `~/.config/aichat/roles/`. For reference, you can
 > check my own [gitcommit.md](./prompts/gitcommit.md).
+
+## Configuration
+
+Use `M-x customize-group RET aichat RET` to customize options.
+
+Make sure to set your default model and roles as needed in your Emacs config.
 
 ### Requirements
 
