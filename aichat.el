@@ -3,7 +3,7 @@
 ;; Copyright (C) 2025  Chmouel Boudjnah
 
 ;; Author: Chmouel Boudjnah <chmouel@chmouel.com>
-;; Version: 0.1.0
+;; Version: 0.2.0
 ;; Package-Requires: ((emacs "24.3"))
 ;; Keywords: convenience
 ;; Homepage: https://github.com/chmouel/aichat.el
@@ -56,6 +56,11 @@ If nil, no role argument is passed."
 
 (defcustom aichat-gitcommit-role "gitcommit"
   "Default role to use for git commit messages when using the `aichat-gitcommit` function'.")
+
+(defcustom aichat-config-file "~/.config/aichat/config.yaml"
+  "Path to aichat configuration file."
+  :type 'string
+  :group 'aichat)
 
 (defcustom aichat-strip-code-blocks t
   "Whether to strip markdown code blocks from output."
@@ -198,6 +203,49 @@ ROLE defaults to `aichat-gitcommit-role'."
                 (goto-char (point-min))
                 (insert output "\n"))))
           (message "Git commit message inserted"))))))
+
+(defun aichat--parse-yaml-models (config-file)
+  "Parse aichat config file and extract all available models.
+Returns a list of model names in the format 'client-name:model-name'."
+  (when (file-exists-p config-file)
+    (with-temp-buffer
+      (insert-file-contents config-file)
+      (let ((models '())
+            (current-client nil)
+            (in-clients nil)
+            (in-models nil))
+        (goto-char (point-min))
+        (while (not (eobp))
+          (let ((line (thing-at-point 'line t)))
+            (cond
+             ((string-match "^clients:" line)
+              (setq in-clients t))
+             ((and in-clients (string-match "^- type:" line))
+              (setq in-models nil)
+              (setq current-client nil))
+             ((and in-clients (string-match "^  name: \\(.+\\)" line))
+              (setq current-client (string-trim (match-string 1 line))))
+             ((and in-clients current-client (string-match "^  models:" line))
+              (setq in-models t))
+             ((and in-models (string-match "^  - name: \\(.+\\)" line))
+              (let ((model-name (string-trim (match-string 1 line))))
+                (push (format "%s:%s" current-client model-name) models)))
+             ((and in-clients (string-match "^[a-zA-Z]" line))
+              (setq in-clients nil))))
+          (forward-line 1))
+        (nreverse models)))))
+
+;;;###autoload
+(defun aichat-set-model ()
+  "Set the aichat default model by selecting from available models in config."
+  (interactive)
+  (let* ((config-file (expand-file-name aichat-config-file))
+         (models (aichat--parse-yaml-models config-file)))
+    (if models
+        (let ((selected-model (completing-read "Select model: " models nil t)))
+          (setq aichat-default-model selected-model)
+          (message "aichat default model set to: %s" selected-model))
+      (user-error "No models found in config file: %s" config-file))))
 
 (provide 'aichat)
 
