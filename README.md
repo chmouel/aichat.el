@@ -63,6 +63,13 @@ message with `git-commit-mode` you can do this:
     (local-set-key (kbd "C-c a") #'aichat-gitcommit)))
 ```
 
+> ℹ️ **Info**
+> You’ll need to create the `gitcommit` role (or whatever you have set as
+> `aichat-gitcommit-role`) in `~/.config/aichat/roles/`. For reference, you can
+> check my own [gitcommit.md](./prompts/gitcommit.md).
+
+### Requirements
+
 Requires the [aichat](https://github.com/sigoden/aichat) CLI tool.
 
 ## Usage
