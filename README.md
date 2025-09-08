@@ -80,6 +80,15 @@ Use `M-x customize-group RET aichat RET` to customize options.
 
 Make sure to set your default model and roles as needed in your Emacs config.
 
+### Available Options
+
+- `aichat-command` - Path to aichat binary (default: "aichat")
+- `aichat-default-model` - Default model string
+- `aichat-default-role` - Default role or nil
+- `aichat-gitcommit-role` - Role for git commit generation
+- `aichat-strip-code-blocks` - Remove markdown code blocks from output
+- `aichat-output-buffer-name` - Name for output buffer
+
 ### Requirements
 
 Requires the [aichat](https://github.com/sigoden/aichat) CLI tool.
@@ -106,25 +115,6 @@ All functions operate on the active region if present, otherwise the entire buff
 ;; Generate git commit message
 (aichat-gitcommit)
 ```
-
-## Configuration
-
-```elisp
-(setq aichat-default-model "claude:claude-3-sonnet")
-(setq aichat-default-role "helpful-assistant")
-(setq aichat-gitcommit-role "conventional-commits")
-(setq aichat-strip-code-blocks t)
-(setq aichat-output-buffer-name "*AI*")
-```
-
-### Available Options
-
-- `aichat-command` - Path to aichat binary (default: "aichat")
-- `aichat-default-model` - Default model string
-- `aichat-default-role` - Default role or nil
-- `aichat-gitcommit-role` - Role for git commit generation
-- `aichat-strip-code-blocks` - Remove markdown code blocks from output
-- `aichat-output-buffer-name` - Name for output buffer
 
 ## Author
 
