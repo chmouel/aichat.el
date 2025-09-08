@@ -4,6 +4,10 @@ Emacs integration for the [aichat](https://github.com/sigoden/aichat) CLI tool.
 Send buffer content or regions to AI models and handle responses
 asynchronously.
 
+# Screenshot (auto generate git commit message via aichat)
+
+https://github.com/user-attachments/assets/5b05d265-0ca3-4503-a6de-cb97909b3928
+
 ## Features
 
 - Execute aichat and display output in a dedicated buffer
