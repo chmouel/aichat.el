@@ -41,6 +41,24 @@ For Emacs 29+ you can use use-package-vc or for Emacs 30:
          ("C-c a g" . aichat-gitcommit))))
 ```
 
+if you want to automatically generate a commit message when creating a commit
+message with `git-commit-mode` you can do this:
+
+```elisp
+(use-package aichat
+  :defer t
+  :after git-commit
+  :vc (:url "https://github.com/chmouel/aichat.el/" :rev :newest)
+  :hook
+  (git-commit-mode . my-aichat-commit-mode)
+  :config
+  (defun my-aichat-commit-mode ()
+    "Setup GIT Commit mode."
+    (aichat-gitcommit)
+    (message "GPTel Commit mode activated")
+    (local-set-key (kbd "C-c a") #'aichat-gitcommit)))
+```
+
 Requires the [aichat](https://github.com/sigoden/aichat) CLI tool.
 
 ## Usage
