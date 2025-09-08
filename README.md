@@ -89,9 +89,10 @@ Make sure to set your default model and roles as needed in your Emacs config.
 - `aichat-strip-code-blocks` - Remove markdown code blocks from output
 - `aichat-output-buffer-name` - Name for output buffer
 
-### Requirements
+## Requirements
 
-Requires the [aichat](https://github.com/sigoden/aichat) CLI tool.
+* Requires the [aichat](https://github.com/sigoden/aichat) CLI tool.
+* Make sure to setup some aichat roles, see the roles guide here https://github.com/sigoden/aichat/wiki/Role-Guide
 
 ## Usage
 
