@@ -31,7 +31,7 @@ Or with `use-package`:
 (use-package aichat
   :custom
   ;; Make sure to set your model to what you have configured in aichat
-  (aichat-default-model "gemini:gemini-2.5-flash") 
+  (aichat-default-model "gemini:gemini-2.5-flash")
   :load-path "path/to/aichat.el"
   :bind (("C-c a e" . aichat-execute)
          ("C-c a i" . aichat-insert)
@@ -44,7 +44,7 @@ For Emacs 29+ you can use use-package-vc or for Emacs 30:
 (use-package aichat
   :custom
   ;; Make sure to set your model to what you have configured in aichat
-  (aichat-default-model "gemini:gemini-2.5-flash") 
+  (aichat-default-model "gemini:gemini-2.5-flash")
   :vc (:url "https://github.com/chmouel/aichat.el/" :rev :newest)
   :bind (("C-c a e" . aichat-execute)
          ("C-c a i" . aichat-insert)
@@ -59,7 +59,7 @@ message with `git-commit-mode` you can do this:
   :defer t
   :custom
   ;; Make sure to set your model to what you have configured in aichat
-  (aichat-default-model "gemini:gemini-2.5-flash") 
+  (aichat-default-model "gemini:gemini-2.5-flash")
   :after git-commit
   :vc (:url "https://github.com/chmouel/aichat.el/" :rev :newest)
   :hook
@@ -92,6 +92,8 @@ Make sure to set your default model and roles as needed in your Emacs config.
 - `aichat-config-file` - Path to aichat configuration file (default: "~/.config/aichat/config.yaml")
 - `aichat-strip-code-blocks` - Remove markdown code blocks from output
 - `aichat-output-buffer-name` - Name for output buffer
+- `aichat-gitcommit-autoformat` - Wether to autoformat commit message body to `aichat-gitcommit-fill-column` value
+- `aichat-gitcommit-fill-column` - Column width for autoformatting commit messages. (default: "72")
 
 ## Requirements
 

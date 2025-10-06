@@ -67,6 +67,15 @@ If nil, no role argument is passed."
   :type 'boolean
   :group 'aichat)
 
+(defcustom aichat-gitcommit-autoformat t
+  "When non-nil, automatically format the generated commit message.
+This ensures:
+- The first line is treated as the subject.
+- Exactly one blank line follows the subject.
+- The rest of the message is refilled up to the Git template marker."
+  :type 'boolean
+  :group 'aichat)
+
 (defcustom aichat-output-buffer-name "*aichat-output*"
   "Name for aichat output buffer."
   :type 'string
@@ -74,6 +83,10 @@ If nil, no role argument is passed."
 
 (defvar aichat-process-counter 0
   "Counter for unique process names.")
+
+(defconst aichat-gitcommit--marker-regexp
+  "^# Please enter the commit message for your changes\\."
+  "Regexp marking the start of the Git commit template section.")
 
 (defun aichat--build-args (model role)
   "Build argument list for aichat command.
@@ -101,10 +114,9 @@ MODEL is the model to use, ROLE is the optional role."
   "Create aichat process with INPUT, MODEL, ROLE and CALLBACK.
 CALLBACK is called with cleaned output when process finishes."
   (let* ((process-name (aichat--get-unique-process-name))
-         (process-buffer (generate-new-buffer 
-                         (format " *aichat-temp-%s*" process-name)))
+         (process-buffer (generate-new-buffer
+                          (format " *aichat-temp-%s*" process-name)))
          (args (aichat--build-args model role)))
-    
     (set-process-sentinel
      (make-process
       :name process-name
@@ -120,10 +132,20 @@ CALLBACK is called with cleaned output when process finishes."
                             (buffer-string))))
               (kill-buffer ,process-buffer)
               (funcall ,callback (aichat--clean-output output)))))))
-    
+
     (process-send-string (get-process process-name) input)
     (process-send-eof (get-process process-name))
     (message "aichat request sent...")))
+
+;;;###autoload
+(defcustom aichat-gitcommit-fill-column 72
+  "Fill column used when reflowing commit bodies."
+  :type 'integer
+  :group 'aichat)
+
+(defconst aichat-gitcommit--marker-regexp
+  "^# Please enter the commit message for your changes\\."
+  "Regexp marking the start of the Git commit template section.")
 
 ;;;###autoload
 (defun aichat-execute (&optional model role)
@@ -137,10 +159,10 @@ ROLE defaults to `aichat-default-role'."
                   (buffer-string)))
          (model (or model aichat-default-model))
          (role (or role aichat-default-role)))
-    
+
     (when (string-empty-p (string-trim input))
       (user-error "No input to send to aichat"))
-    
+
     (aichat--create-process
      input model role
      (lambda (output)
@@ -166,10 +188,10 @@ ROLE defaults to `aichat-default-role'."
          (role (or role aichat-default-role))
          (target-buffer-name (buffer-name))
          (insert-point (point)))
-    
+
     (when (string-empty-p (string-trim input))
       (user-error "No input to send to aichat"))
-    
+
     (aichat--create-process
      input model role
      `(lambda (output)
@@ -182,17 +204,94 @@ ROLE defaults to `aichat-default-role'."
           (message "aichat completed and inserted"))))))
 
 ;;;###autoload
+(defun aichat-gitcommit-format-buffer ()
+  "Format current buffer as a conventional commit message.
+
+Rules:
+1) Line 1 is the subject.
+2) Ensure exactly one blank line after subject.
+3) Refill the body up to the Git template marker.
+4) Bulleted/numbered lists are refilled per-item, not merged.
+5) Indented/code blocks (>=4 spaces or a tab) are left untouched."
+  (interactive)
+  (save-excursion
+    ;; Ensure exactly one blank line after subject
+    (goto-char (point-min))
+    (end-of-line)
+    (let ((pos-after-subject (point)))
+      ;; Collapse any number of blank lines after subject
+      (while (and (not (eobp))
+                  (save-excursion
+                    (forward-line 1)
+                    (beginning-of-line)
+                    (looking-at-p "^[ \t]*$")))
+        (forward-line 1))
+      (goto-char pos-after-subject)
+      (forward-line 1)
+      (unless (looking-at-p "^[ \t]*$")
+        (open-line 1)))
+
+    (let* ((fill-column aichat-gitcommit-fill-column)
+           (beg (progn (goto-char (point-min))
+                       (forward-line 2)            ; start of line 3
+                       (point)))
+           (end (or (save-excursion
+                      (goto-char beg)
+                      (when (re-search-forward aichat-gitcommit--marker-regexp nil t)
+                        (match-beginning 0)))
+                    (point-max)))
+           ;; Recognize bullets: -, +, *, 1., 1), with leading indent
+           (bullet-re "^[ \t]*\\(?:[-+*]\\|[0-9]+[.)]\\)[ \t]+")
+           ;; Treat code/indented blocks as their own “paragraphs” we won't fill
+           (code-re "^[ \t]\\{4,\\}\\|^\t+")
+           ;; Extend paragraph vars so each bullet item is a paragraph start,
+           ;; and blank lines or code blocks separate paragraphs.
+           (paragraph-start (concat "\\(?:" paragraph-start "\\)\\|"
+                                    bullet-re "\\|" code-re))
+           (paragraph-separate (concat "\\(?:" paragraph-separate "\\)\\|"
+                                       bullet-re "\\|" code-re))
+           ;; Help Emacs detect the bullet/indent as a fill prefix for wrapping
+           (adaptive-fill-regexp (concat "\\(?:" adaptive-fill-regexp "\\)\\|"
+                                         "^[ \t]*\\(?:[-+*]\\|[0-9]+[.)]\\)[ \t]+"))
+           (use-hard-newlines nil))
+      (when (< beg end)
+        (save-restriction
+          (narrow-to-region beg end)
+          (goto-char (point-min))
+          (while (not (eobp))
+            (let ((pstart (point)))
+              ;; If current line is a code block, skip it verbatim
+              (cond
+               ((looking-at-p code-re)
+                (forward-line 1))                ; leave code line untouched
+               (t
+                ;; Move to end of paragraph using our custom paragraph rules
+                (forward-paragraph)
+                (let ((pend (point)))
+                  ;; Only fill if the paragraph contains non-blank, non-code text
+                  (save-excursion
+                    (goto-char pstart)
+                    (unless (or (>= pstart pend)
+                                (looking-at-p "^[ \t]*$")
+                                (looking-at-p code-re))
+                      ;; Fill this paragraph; bullets are preserved due to
+                      ;; paragraph-start and adaptive-fill-regexp.
+                      (fill-region pstart pend)))))
+               ;; Skip consecutive blank lines cleanly
+               (skip-chars-forward "\n")))))))))
+
+;;;###autoload
 (defun aichat-gitcommit (&optional role)
   "Execute aichat for git commit and insert at beginning of buffer.
-ROLE defaults to `aichat-gitcommit-role'."
+ROLE defaults to `aichat-gitcommit-role'. If
+`aichat-gitcommit-autoformat' is non-nil, run
+`aichat-gitcommit-format-buffer' afterward."
   (interactive)
   (let* ((input (buffer-string))
          (target-buffer-name (buffer-name))
          (commit-role (or role aichat-gitcommit-role)))
-    
     (when (string-empty-p (string-trim input))
       (user-error "No input to send to aichat"))
-    
     (aichat--create-process
      input aichat-default-model commit-role
      `(lambda (output)
@@ -201,9 +300,13 @@ ROLE defaults to `aichat-gitcommit-role'."
             (with-current-buffer buf
               (save-excursion
                 (goto-char (point-min))
-                (insert output "\n"))))
-          (message "Git commit message inserted"))))))
+                (insert output "\n")
+                (when aichat-gitcommit-autoformat
+                  (aichat-gitcommit-format-buffer))))
+            (message "Git commit message inserted")))))))
 
+
+;;;###autoload
 (defun aichat--parse-yaml-models (config-file)
   "Parse aichat config file and extract all available models.
 Returns a list of model names in the format 'client-name:model-name'."
